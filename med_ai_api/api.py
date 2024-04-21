@@ -3,6 +3,7 @@ from django.contrib.auth import authenticate as auth_authenticate
 from django.contrib.auth import login as auth_login
 from django.http import HttpRequest
 from django.contrib.auth.models import User
+from .models import Patient
 from ninja import NinjaAPI
 from ninja.security import HttpBearer, HttpBasicAuth
 import jwt
@@ -26,8 +27,15 @@ class AuthBearer(HttpBearer):
         
 
 @api.get("/get_patient/{cpf}", auth=AuthBearer())
-def get_patient(request):
-    return {"name": "Hello, world!", "cpf": "12345678901"}
+def get_patient(request, cpf):
+
+    try:
+        patient = Patient.objects.get(cpf=cpf)
+        name = patient.name
+        cpf = patient.cpf
+        return {"name": name, "cpf": cpf}
+    except Patient.DoesNotExist:
+        return (404, {"message": "Paciente não encontrado"})
 
 
 def generate_jwt(user):

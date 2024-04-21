@@ -15,3 +15,5 @@ class Patient(models.Model):
                                    on_delete=models.PROTECT,
                                    related_name="patients")
     
+    def __str__(self) -> str:
+        return self.name
