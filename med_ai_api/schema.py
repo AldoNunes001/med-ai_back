@@ -8,7 +8,7 @@ class UserSchema(Schema):
 
 class UserResponseSchema(Schema):
     username: str
-    is_authenticated: bool
+    token: str
 
 
 class NotAuthenticatedError(Schema):
