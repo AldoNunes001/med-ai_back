@@ -11,6 +11,16 @@ class UserResponseSchema(Schema):
     token: str
 
 
+class PatientResponseSchema(Schema):
+    name: str
+    cpf: str
+    
+
 class NotAuthenticatedError(Schema):
     message: str
     is_authenticated: bool = False
+
+    
+class NotFoundError(Schema):
+    message: str
+    is_found: bool = False

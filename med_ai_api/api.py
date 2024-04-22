@@ -7,7 +7,7 @@ from .models import Patient
 from ninja import NinjaAPI
 from ninja.security import HttpBearer, HttpBasicAuth
 import jwt
-from .schema import UserSchema, UserResponseSchema, NotAuthenticatedError
+from .schema import PatientResponseSchema, UserSchema, UserResponseSchema, NotAuthenticatedError, NotFoundError
 
 api = NinjaAPI()
 
@@ -26,7 +26,7 @@ class AuthBearer(HttpBearer):
             return token
         
 
-@api.get("/get_patient/{cpf}", auth=AuthBearer())
+@api.get("/get_patient/{cpf}", auth=AuthBearer(), response={200: PatientResponseSchema, 404: NotFoundError})
 def get_patient(request, cpf):
 
     try:
