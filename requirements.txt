@@ -2,4 +2,3 @@ django
 django-ninja
 django-ninja-extra
 django-ninja-jwt
-pyjwt
