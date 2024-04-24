@@ -1,55 +1,46 @@
-from typing import Any
-from django.contrib.auth import authenticate as auth_authenticate
-from django.contrib.auth import login as auth_login
-from django.http import HttpRequest
-from django.contrib.auth.models import User
+# from typing import Any
+# from django.contrib.auth import authenticate as auth_authenticate
+# from django.contrib.auth import login as auth_login
+# from django.http import HttpRequest
+# from django.contrib.auth.models import User
+from typing import List
 from .models import Patient
-from ninja import NinjaAPI
-from ninja.security import HttpBearer, HttpBasicAuth
-import jwt
+# from ninja import NinjaAPI
+# from ninja.security import HttpBearer, HttpBasicAuth
+# import jwt
 from .schema import PatientResponseSchema, UserSchema, UserResponseSchema, NotAuthenticatedError, NotFoundError
 
-api = NinjaAPI()
+from ninja_jwt.controller import NinjaJWTDefaultController
+from ninja_jwt.authentication import JWTAuth
+from ninja_extra import NinjaExtraAPI, api_controller, route
+
+# api = NinjaAPI()
+api = NinjaExtraAPI()
+api.register_controllers(NinjaJWTDefaultController)
 
 JWT_SECRET = "diogofredoferreira"
 
 
-class AuthBearer(HttpBearer):
-    def authenticate(self, request, token):
-        
-        # payload = jwt.decode(token, settings.JWT_SECRET, algorithms=["HS256"])
-        payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
-        username = payload.get("username")
-        
-        user = str(User.objects.get(username=username))
-        if username == user:
-            return token
-        
+@api_controller('/patients', tags=['patients'], permissions=[])
+class PatientController:
 
-@api.get("/get_patient/{cpf}", auth=AuthBearer(), response={200: PatientResponseSchema, 404: NotFoundError})
-def get_patient(request, cpf):
+    @route.get('/', response={200: List[PatientResponseSchema]})
+    def list_patients(self):
+        patients = Patient.objects.all()
+        return patients
 
-    try:
-        patient = Patient.objects.get(cpf=cpf)
-        name = patient.name
-        cpf = patient.cpf
-        return {"name": name, "cpf": cpf}
-    except Patient.DoesNotExist:
-        return (404, {"message": "Paciente não encontrado"})
+    @route.get('/{cpf}', response={200: PatientResponseSchema, 404: NotFoundError}, auth=JWTAuth())
+    def get_patient(self, cpf: str):
+        try:
+            patient = Patient.objects.get(cpf=cpf)
+            name = patient.name
+            cpf = patient.cpf
+            return {"name": name, "cpf": cpf}
+        except Patient.DoesNotExist:
+            return (404, {"message": "Paciente não encontrado"})
 
 
-def generate_jwt(user):
-    token = jwt.encode({"username": user.username}, JWT_SECRET, algorithm="HS256")
-    return token
+api.register_controllers(
+    PatientController
 
-
-@api.post("/login", response={200: UserResponseSchema, 403: NotAuthenticatedError})
-def login(request, data: UserSchema):
-    user = auth_authenticate(request, username=data.username, password=data.password)
-    if user is not None:
-        auth_login(request, user)
-        token = generate_jwt(user)
-        global MY_TOKEN
-        MY_TOKEN = token
-        return {"username": user.username, "token": token}
-    return (403, {"message": "Usuário ou senha inválidos"})
+)
